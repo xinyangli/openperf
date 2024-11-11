@@ -5,11 +5,11 @@ mainargs ?= ref
 SIM_CORE ?= minimal-xiangshan
 
 ifeq ($(mainargs),ref)
-	SIM_CORE = minimal-xiangshan
-else ifeq ($(mainargs), train)
 	SIM_CORE = rocket
 else ifeq ($(mainargs), test)
 	SIM_CORE = NutShell
+else ifeq ($(mainargs), train)
+	SIM_CORE = minimal-xiangshan
 endif
 
 SRC_PATH = $(SIM_CORE) emu
