@@ -15,7 +15,7 @@ endif
 SRC_PATH = $(SIM_CORE) emu
 
 SRCS := $(foreach x, $(SRC_PATH), $(wildcard $(x)/*.cpp) $(wildcard $(x)/*.c) $(wildcard $(x)/*.S))
-INC_PATH += $(SIM_CORE) include
+INC_PATH += $(shell realpath $(SIM_CORE)) $(shell realpath include)
 
 include $(AM_HOME)/Makefile
 

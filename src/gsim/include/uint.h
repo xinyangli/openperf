@@ -1,8 +1,9 @@
 #include <sys/types.h>
 #include <cstdint>
 #include <cstring>
-#define uint128_t __uint128_t
-#define int128_t __int128_t
+#include <climits>
+#define uint128_t unsigned __int128
+#define int128_t __int128
 
 class uint512_t;
 class uint1024_t;
