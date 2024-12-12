@@ -16,10 +16,55 @@ KEEP_LOG_SUCCEED ?= false
 TIME := $(shell date --iso=seconds)
 
 ifeq ($(mainargs),ref)
-ALL = mcf x264 tcc stream linpack gemm whetstone
+IMAGES := mcf x264 tcc stream linpack gemm whetstone
 else
-ALL = cpuemu mcf x264 tcc stream linpack gemm whetstone
+IMAGES := cpuemu mcf x264 tcc stream linpack gemm whetstone
 endif
+
+# Toolchain settings
+AS := $(CC)
+
+ARCH ?= # Note that ARCH must be provided
+# dependency
+AM_ROOT ?= $(AM_HOME)/build/install/$(ARCH)
+# setup directories
+WORK_DIR  ?= $(shell pwd)
+DST_DIR   ?= $(WORK_DIR)/build
+BUILDDIR ?= $(DST_DIR)
+LIB_BUILDDIR ?= $(DST_DIR)/lib
+INSTALLDIR ?= $(WORK_DIR)/build/install/$(ARCH)
+LIB_INSTALLDIR ?= $(INSTALLDIR)/lib
+INC_INSTALLDIR ?= $(INSTALLDIR)/include
+
+include $(AM_ROOT)/lib/make/rules.mk
+include $(AM_ROOT)/lib/make/flags-$(ARCH).mk
+
+# Rules to build common libraries
+BENCH_SRCS := $(shell find src/common/bench -name "*.c")
+BENCH_CFLAGS := $(CFLAGS) $(AM_CFLAGS) -I$(shell realpath ./src/common/bench/include)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libbench.a,BENCH_))
+
+OPENLIBM_SRCS := $(shell find src/common/openlibm/src -name "*.c")
+OPENLIBM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) -I$(shell realpath ./src/common/openlibm/include)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libopenlibm.a,OPENLIBM_))
+
+SOFTFP_SRCS := $(shell find src/common/soft-fp -name "*.c")
+SOFTFP_CFLAGS := $(CFLAGS) $(AM_CFLAGS)
+
+$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libsoftfp.a,SOFTFP_))
+
+LIBS := libbench.a libopenlibm.a libsoftfp.a
+libs: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
+
+LDFLAGS += -L$(LIB_BUILDDIR) -lbench -lopenlibm -lsoftfp 
+
+include $(addsuffix /Makefile, $(addprefix src/, $(IMAGES)))
+
+# Add libs to dependency of every image
+$(addsuffix .elf, $(addprefix $(BUILDDIR)/images/, $(IMAGES))): %: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
+imgs: $(addsuffix .bin, $(addprefix $(BUILDDIR)/images/, $(IMAGES)))
 
 all: $(BENCH_LIBS) $(ALL)
 	@echo "OpenPerf [$(words $(ALL)) item(s)]:" $(ALL)
