@@ -21,6 +21,7 @@ CC ?= $(CROSS_COMPILE)gcc
 CXX ?= $(CROSS_COMPILE)g++
 AR ?= $(CROSS_COMPILE)ar
 OBJCOPY ?= $(CROSS_COMPILE)objcopy
+PKG_CONFIG ?= pkg-config
 # $(AS) does not do preprocessing. Since we are using includes
 # in assembly source code, we need to use $(CC) as frontend
 # to invoke assembler.
@@ -44,8 +45,8 @@ AM_ROOT ?= $(AM_HOME)/build/install/$(ARCH)
 # Set PKG_CONFIG_PATH to look in AM_ROOT first, then system paths
 PKG_CONFIG_PATH := $(AM_ROOT)/lib/pkgconfig:$(PKG_CONFIG_PATH)
 export PKG_CONFIG_PATH
-AM_CFLAGS := $(shell pkg-config --cflags abstract-machine)
-AM_LDFLAGS := $(shell pkg-config --libs abstract-machine)
+AM_CFLAGS := $(shell $(PKG_CONFIG) --cflags abstract-machine)
+AM_LDFLAGS := $(shell $(PKG_CONFIG) --libs abstract-machine)
 $(info AM_CFLAGS = $(AM_CFLAGS))
 $(info AM_LDFLAGS = $(AM_LDFLAGS))
 
@@ -62,15 +63,10 @@ OPENLIBM_CFLAGS := $(CFLAGS) $(AM_CFLAGS) -I$(shell realpath ./src/common/openli
 
 $(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libopenlibm.a,OPENLIBM_))
 
-SOFTFP_SRCS := $(shell find src/common/soft-fp -name "*.c")
-SOFTFP_CFLAGS := $(CFLAGS) $(AM_CFLAGS)
-
-$(eval $(call ADD_LIBRARY,$(LIB_BUILDDIR)/libsoftfp.a,SOFTFP_))
-
-LIBS := libbench.a libopenlibm.a libsoftfp.a
+LIBS := libbench.a libopenlibm.a
 libs: $(addprefix $(LIB_BUILDDIR)/, $(LIBS))
 
-LDFLAGS += -L$(LIB_BUILDDIR) -lbench -lopenlibm -lsoftfp 
+LDFLAGS += -L$(LIB_BUILDDIR) -lbench -lopenlibm
 
 include $(addsuffix /Makefile, $(addprefix src/, $(IMAGES)))
 

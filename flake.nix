@@ -6,6 +6,10 @@
   outputs =
     { self, nixpkgs, ... }:
     let
+      # Local and cross package sets:
+      # pkgs: local, used for native
+      # rv32CrossPkgs: local -> rv32CrossPkgs
+      # rv32LLVMCrossPkgs: local -> rv32CrossPkgs, but use llvm instead of gnu
       pkgs = import nixpkgs { system = "x86_64-linux"; };
       patchGccStdenv =
         pkgs: stdenv:
@@ -17,13 +21,13 @@
       crossSystem = {
         config = "riscv32-none-none-elf";
         gcc = {
-          abi = "ilp32";
-          arch = "rv32i";
+          arch = "rv32im_zicsr";
         };
       };
       localSystem = "x86_64-linux";
       rv32CrossPkgs = import nixpkgs {
         inherit localSystem crossSystem;
+        allowUnsupportedSystem = true;
       };
       rv32LLVMCrossPkgs = import nixpkgs {
         inherit localSystem;
@@ -31,43 +35,71 @@
           useLLVM = true;
         };
       };
-      bareClangStdenv =
-        with rv32LLVMCrossPkgs;
-        overrideCC clangStdenv buildPackages.llvmPackages.clangNoLibcNoRt;
-      python3WithPkgs =
-        pkgs:
-        pkgs.python3.withPackages (
-          ps: with ps; [
-            tqdm
-            pyyaml
-          ]
-        );
 
-      nemuDepsBuildBuild = with pkgs; [
-        gnumake
-        SDL2
-        pkg-config
-        bison
-        flex
-        ncurses
-        readline
-        libllvm
-        gcc
-        clang
-        (python3WithPkgs pkgs)
-      ];
+      # all native dependencies
+      # nemu:
+      #   bison, flex, ncurses, gnumake -> native binary
+      # am:
+      #   pkg-config, gnumake -> riscv32-none
+      # openperf:
+      #   pkg-config, gnumake -> riscv32-none
+      nemu-env =
+        {
+          mkShell,
+          gnumake,
+          bison,
+          flex,
+          ncurses,
+          readline,
+          libllvm,
+          pkg-config,
+          SDL2,
+          ...
+        }:
+        mkShell {
+          strictDeps = true;
+          nativeBuildInputs = [
+            pkg-config
+            gnumake
+            bison
+            flex
+            ncurses
+          ];
+          buildInputs = [
+            SDL2
+            readline
+            libllvm
+          ];
+        };
+      am-nemu-env =
+        {
+          mkShell,
+          gnumake,
+          pkg-config,
+          python3,
+          ...
+        }:
+        mkShell {
+          name = "nemu-am-env";
+
+          nativeBuildInputs = [
+            (python3.pythonOnBuildForHost.withPackages (
+              ps: with ps; [
+                tqdm
+                pyyaml
+              ]
+            ))
+            pkg-config
+            gnumake
+          ];
+        };
     in
     {
-      devShells.x86_64-linux = rec {
-        nemu = rv32CrossPkgs.gccStdenvNoLibs.mkDerivation {
-          name = "openperf";
-          depsBuildBuild = nemuDepsBuildBuild;
-        };
-
-        nemu-clang = bareClangStdenv.mkDerivation {
-          name = "openperf";
-          depsBuildBuild = nemuDepsBuildBuild;
-        };
+      devShells.x86_64-linux = {
+        # am-nemu = rv32CrossPkgs.callPackage am-nemu-env { };
+        am-nemu = rv32CrossPkgs.callPackage am-nemu-env { };
+        am-nemu-clang = rv32LLVMCrossPkgs.callPackage am-nemu-env { };
+        nemu = pkgs.callPackage nemu-env { };
 
         native =
           pkgs.mkShell.override
@@ -81,12 +113,12 @@
               ];
               buildInputs = with pkgs; [
                 gnumake
-                SDL2
                 (python3WithPkgs pkgs)
               ];
             };
-
-        riscv32-nemu = nemu;
+      };
+      passthru = {
+        inherit rv32CrossPkgs rv32LLVMCrossPkgs;
       };
     };
 }

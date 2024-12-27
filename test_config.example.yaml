@@ -1,4 +1,4 @@
-max_workers: 1
+max_workers: 4
 tests:
   native-ref:
     timeout: 120
@@ -19,7 +19,7 @@ tests:
     parameters:
         0: [ "cpuemu", "mcf", "x264", "tcc", "stream", "linpack", "gemm", "whetstone" ]
   nemu-ref:
-    timeout: 50
+    timeout: 80
     tags:
       - riscv32-nemu
       - ref
