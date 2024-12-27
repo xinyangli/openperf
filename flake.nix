@@ -96,9 +96,8 @@
     in
     {
       devShells.x86_64-linux = {
-        # am-nemu = rv32CrossPkgs.callPackage am-nemu-env { };
-        am-nemu = rv32CrossPkgs.callPackage am-nemu-env { };
-        am-nemu-clang = rv32LLVMCrossPkgs.callPackage am-nemu-env { };
+        riscv32-nemu = rv32CrossPkgs.callPackage am-nemu-env { };
+        riscv32-nemu-clang = rv32LLVMCrossPkgs.callPackage am-nemu-env { };
         nemu = pkgs.callPackage nemu-env { };
 
         native =
@@ -112,8 +111,9 @@
                 pkgs.pkg-config
               ];
               buildInputs = with pkgs; [
+                SDL2
                 gnumake
-                (python3WithPkgs pkgs)
+                (python3.withPackages (ps: with ps; [ tqdm pyyaml ] ))
               ];
             };
       };

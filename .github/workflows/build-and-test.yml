@@ -50,8 +50,8 @@ jobs:
       - name: Build nemu 
         if: ${{ contains(matrix.arch, 'nemu') }}
         run: |
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }} openperf_${{ matrix.arch }}_defconfig
-          nix develop --no-use-registries /tmp/env/openperf-env-${{ matrix.arch }} --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }}
+          nix develop .#nemu --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }} openperf_${{ matrix.arch }}_defconfig
+          nix develop .#nemu --impure --command make -C openperf-nemu ARCH=${{ matrix.arch }}
 
       - name: Build
         run: |

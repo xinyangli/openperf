@@ -17,10 +17,12 @@ endif
 
 # Toolchain settings
 ### (Cross) compilers, e.g., mips-linux-gnu-g++
-CC ?= $(CROSS_COMPILE)gcc
-CXX ?= $(CROSS_COMPILE)g++
-AR ?= $(CROSS_COMPILE)ar
-OBJCOPY ?= $(CROSS_COMPILE)objcopy
+ifdef CROSS_COMPILE
+CC := $(CROSS_COMPILE)gcc
+CXX := $(CROSS_COMPILE)g++
+AR := $(CROSS_COMPILE)ar
+OBJCOPY := $(CROSS_COMPILE)objcopy
+endif
 PKG_CONFIG ?= pkg-config
 # $(AS) does not do preprocessing. Since we are using includes
 # in assembly source code, we need to use $(CC) as frontend
